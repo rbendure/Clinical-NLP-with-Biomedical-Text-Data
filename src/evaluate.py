@@ -14,6 +14,8 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
+import matplotlib
+matplotlib.use("Agg")  # Non-interactive backend for reproducible figure generation
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

@@ -16,6 +16,8 @@ import json
 import os
 from typing import Any, Dict, List
 
+import matplotlib
+matplotlib.use("Agg")  # Non-interactive backend for reproducible figure generation
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -99,7 +101,7 @@ def save_config(config: Dict[str, Any], output_dir: str) -> str:
 
 def save_model_comparison(results: List[Dict[str, Any]], output_dir: str, figure_dir: str) -> None:
     """Save model comparison CSV, README placeholders, and comparison figure."""
-    if len(results) < 2:
+    if len(results) < 1:
         return
 
     ensure_dir(output_dir)

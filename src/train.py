@@ -74,7 +74,7 @@ def build_trainer(
         learning_rate=learning_rate,
         weight_decay=0.01,
         warmup_ratio=0.1,
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
         metric_for_best_model="accuracy",
@@ -83,7 +83,7 @@ def build_trainer(
         logging_steps=50,
         seed=seed,
         report_to="none",
-        fp16=torch.cuda.is_available(),
+        fp16=False,  # Disable fp16 for CPU compatibility
     )
 
     return Trainer(
