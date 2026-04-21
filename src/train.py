@@ -10,7 +10,7 @@ Handles:
 """
 
 import os
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import torch
@@ -24,7 +24,7 @@ from src.utils import ensure_dir
 # Custom data collator for multiple-choice
 # ---------------------------------------------------------------------------
 
-def mc_data_collator(features: list[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
+def mc_data_collator(features: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
     """Collate MedMCQADataset items into batched tensors."""
     input_ids = torch.stack([f["input_ids"] for f in features])
     attention_mask = torch.stack([f["attention_mask"] for f in features])
