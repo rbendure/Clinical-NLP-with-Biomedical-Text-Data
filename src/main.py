@@ -68,8 +68,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def parse_model_list(model_arg: str, compare_models: bool) -> List[str]:
-    """Resolve and validate the final list of models to run."""
+def resolve_and_validate_models(model_arg: str, compare_models: bool) -> List[str]:
+    """Parse, resolve, and validate the final list of models to run."""
     if compare_models:
         return ["distilbert-base-uncased", "bert-base-uncased"]
 
@@ -216,7 +216,7 @@ def main() -> None:
     args = parse_args()
 
     try:
-        models_to_run = parse_model_list(args.model, args.compare_models)
+        models_to_run = resolve_and_validate_models(args.model, args.compare_models)
     except ValueError as exc:
         raise SystemExit(f"Argument error: {exc}") from exc
 

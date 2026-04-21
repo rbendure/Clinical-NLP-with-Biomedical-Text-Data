@@ -10,7 +10,7 @@ Handles:
 """
 
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import torch
@@ -32,7 +32,7 @@ def mc_data_collator(features: list[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
     return {"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels}
 
 
-def compute_metrics(eval_pred: tuple[np.ndarray, np.ndarray]) -> Dict[str, float]:
+def compute_metrics(eval_pred: Tuple[np.ndarray, np.ndarray]) -> Dict[str, float]:
     """Compute common classification metrics for evaluation logging."""
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)

@@ -29,12 +29,9 @@ def resolve_model_name(model_name: str) -> str:
     normalized = model_name.strip().lower()
     if normalized not in SUPPORTED_MODELS:
         supported = ", ".join(sorted(set(SUPPORTED_MODELS.values())))
+        alias_keys = [key for key, value in SUPPORTED_MODELS.items() if key != value]
         aliases = ", ".join(
-            sorted(
-                key
-                for key in SUPPORTED_MODELS.keys()
-                if key in {"distilbert", "bert"}
-            )
+            sorted(alias_keys)
         )
         raise ValueError(
             "Invalid model name: "

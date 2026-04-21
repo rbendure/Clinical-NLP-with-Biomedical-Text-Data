@@ -12,7 +12,7 @@ Handles:
 
 import json
 import os
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -47,8 +47,8 @@ def get_predictions(
         shuffle=False,
     )
 
-    all_preds: list[int] = []
-    all_labels: list[int] = []
+    all_preds: List[int] = []
+    all_labels: List[int] = []
 
     with torch.no_grad():
         for batch in loader:
@@ -106,6 +106,7 @@ def save_predictions(
         )
 
     df = pd.DataFrame(rows)
+    df["correct"] = df["correct"].astype(bool)
     csv_path = os.path.join(output_dir, "predictions.csv")
     df.to_csv(csv_path, index=False)
     print(f"Predictions saved to: {csv_path}")
