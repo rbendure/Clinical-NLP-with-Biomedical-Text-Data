@@ -47,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--batch_size", type=int, default=8, help="Per-device batch size")
+    parser.add_argument("--eval_batch_size", type=int, default=16, help="Per-device evaluation batch size")
     parser.add_argument("--learning_rate", type=float, default=2e-5, help="AdamW learning rate")
     parser.add_argument("--train_size", type=int, default=5000, help="Training subset size")
     parser.add_argument("--val_size", type=int, default=1000, help="Validation subset size")
@@ -157,6 +158,7 @@ def run_single_model(
         "model": model_name,
         "epochs": args.epochs,
         "batch_size": args.batch_size,
+        "eval_batch_size": args.eval_batch_size,
         "learning_rate": args.learning_rate,
         "train_size": args.train_size,
         "val_size": args.val_size,
@@ -194,7 +196,7 @@ def run_single_model(
         model=trainer.model,
         val_dataset=val_dataset,
         output_dir=model_output_dir,
-        batch_size=max(16, args.batch_size),
+        batch_size=args.eval_batch_size,
         figure_dir=model_figure_dir,
         device=device,
     )
@@ -240,6 +242,7 @@ def main() -> None:
         "models": models_to_run,
         "epochs": args.epochs,
         "batch_size": args.batch_size,
+        "eval_batch_size": args.eval_batch_size,
         "learning_rate": args.learning_rate,
         "train_size": args.train_size,
         "val_size": args.val_size,

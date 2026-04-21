@@ -116,6 +116,22 @@ def error_analysis(df: pd.DataFrame, n: int = 5) -> Tuple[pd.DataFrame, pd.DataF
     """Return n correct and n incorrect examples for qualitative analysis."""
     correct_df = df[df["correct"]].head(n)
     incorrect_df = df[~df["correct"]].head(n)
+
+    print("\n" + "=" * 60)
+    print(f"ERROR ANALYSIS  –  {n} Correct  |  {n} Incorrect examples")
+    print("=" * 60)
+
+    def _print_examples(subset: pd.DataFrame, tag: str) -> None:
+        print(f"\n--- {tag} ---")
+        for _, row in subset.iterrows():
+            print(f"  Q : {row['question'][:100]}...")
+            print(f"  A : {row['option_a']}  B : {row['option_b']}")
+            print(f"  C : {row['option_c']}  D : {row['option_d']}")
+            print(f"  True: {row['true_label']}  |  Pred: {row['pred_label']}")
+            print()
+
+    _print_examples(correct_df, "CORRECT")
+    _print_examples(incorrect_df, "INCORRECT")
     return correct_df, incorrect_df
 
 

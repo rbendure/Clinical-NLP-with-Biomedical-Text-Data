@@ -120,7 +120,8 @@ python -m src.main --epochs 1 --train_size 500 --val_size 200
 | `--model` | `str` | `distilbert-base-uncased` | Single model name/alias or comma-separated model list |
 | `--compare_models` | `flag` | `False` | Runs `distilbert-base-uncased` and `bert-base-uncased` together |
 | `--epochs` | `int` | `3` | Number of training epochs |
-| `--batch_size` | `int` | `8` | Per-device train/eval batch size |
+| `--batch_size` | `int` | `8` | Per-device training batch size |
+| `--eval_batch_size` | `int` | `16` | Per-device evaluation batch size |
 | `--learning_rate` | `float` | `2e-5` | AdamW learning rate |
 | `--train_size` | `int` | `5000` | Training subset size |
 | `--val_size` | `int` | `1000` | Validation subset size |
