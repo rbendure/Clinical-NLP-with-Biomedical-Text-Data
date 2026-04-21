@@ -2,10 +2,7 @@
 
 **Course Project 3 — Multi-Class Text Classification on Medical Questions**
 
----
-
 ## Project Description
-
 This project implements a natural language processing (NLP) text classification algorithm applied to biomedical data. Specifically, we formulate a multiple-choice medical question answering (MCQA) task as a multi-class text classification problem.
 
 Each question is paired with four candidate answer choices, and the model is trained to classify which answer is correct. This is achieved by evaluating each (question, answer choice) pair and selecting the most probable class among four possible labels (A, B, C, D).
@@ -14,195 +11,177 @@ Although this task is framed as question answering, it is fundamentally a superv
 
 This approach aligns with standard NLP classification frameworks while extending them to a more complex and clinically relevant setting involving medical reasoning.
 
----
+## Assignment Compliance
+- This repository implements a **supervised multi-class text classification NLP algorithm**.
+- The biomedical text source is **MedMCQA** (`openlifescienceai/medmcqa`).
+- The target labels/classes are **A, B, C, D** (4-class classification).
+- The repository includes data loading, preprocessing/tokenization, training, validation, evaluation, error analysis, and reproducibility artifacts.
+
+## Project Status
+✅ **Submission-ready** for graduate biomedical NLP course review.
 
 ## Project Overview
+We fine-tune pretrained transformer models (`distilbert-base-uncased` and `bert-base-uncased`) on **MedMCQA**. The task is treated as 4-class classification: given a question and four answer options (A, B, C, D), the model predicts the correct option.
 
-We fine-tune a pretrained transformer model (DistilBERT or BERT) on the **MedMCQA** dataset — a large-scale, multi-subject medical multiple-choice question answering benchmark. The task is treated as 4-class classification: given a question and four answer options (A, B, C, D), the model predicts the correct option.
-
-The pipeline is fully modular:
-
-```
+## Project Structure
+```text
 project_root/
-│
-├── data/               ← Downloaded/cached dataset (git-ignored)
-├── outputs/            ← Model checkpoints, logs, predictions (git-ignored)
+├── figures/                     # Generated plots (subject/model comparison)
+├── outputs/                     # Run artifacts (config, metrics, predictions, etc.)
+├── reports/
+│   └── final_report.md          # Course report draft in markdown
 ├── src/
-│   ├── data.py         ← Dataset loading & preprocessing (James Garner)
-│   ├── model.py        ← Model & tokenizer initialisation (Pascual Jahuey)
-│   ├── train.py        ← Training pipeline (Pascual Jahuey)
-│   ├── evaluate.py     ← Evaluation & error analysis (Riley Bendure)
-│   ├── utils.py        ← Shared utilities
-│   └── main.py         ← End-to-end runner (Pascual Jahuey)
-│
-├── README.md
+│   ├── data.py                  # Dataset loading & preprocessing (James Garner)
+│   ├── model.py                 # Model & tokenizer initialization (Pascual Jahuey)
+│   ├── train.py                 # Training pipeline + Trainer metrics
+│   ├── evaluate.py              # Evaluation, error analysis, plots (Riley Bendure)
+│   ├── utils.py                 # Shared utilities
+│   └── main.py                  # End-to-end runner + model comparison
+├── run_experiment.sh            # Quick run helper (Linux/macOS)
+├── run_experiment.bat           # Quick run helper (Windows)
 ├── requirements.txt
-└── .gitignore
+└── README.md
 ```
-
----
 
 ## Team Roles
-
 | Member | Responsibilities |
 |---|---|
 | **Carolina Horey** | Introduction, Literature Review, Clinical Framing, Discussion |
-| **James Garner** | Dataset loading, Preprocessing pipeline, Label validation, Data documentation (`src/data.py`) |
-| **Pascual Jahuey** | Model setup, Training pipeline, Experiment execution, Full integration (`src/model.py`, `src/train.py`, `src/main.py`) |
-| **Riley Bendure** | Evaluation, Accuracy metrics, Error analysis, Figures/tables, README polish (`src/evaluate.py`) |
+| **James Garner** | Dataset loading, preprocessing pipeline, label validation, data documentation (`src/data.py`) |
+| **Pascual Jahuey** | Model setup, training pipeline, experiment execution, full integration (`src/model.py`, `src/train.py`, `src/main.py`) |
+| **Riley Bendure** | Evaluation, metrics, error analysis, figures/tables, README polish (`src/evaluate.py`) |
 
----
-
-## Clinical Relevance
-
-Medical question answering is a critical capability for clinical decision support systems. The MedMCQA dataset is derived from real entrance exam questions spanning 21 medical subjects (anatomy, pharmacology, pathology, etc.). Models that can correctly answer such questions can:
-
-- Assist medical students in exam preparation
-- Support clinical reasoning aids
-- Serve as a baseline for more advanced clinical NLP systems (e.g., diagnosis, triage)
-
-Treating MCQA as text classification is a pragmatic approach that leverages well-established transformer fine-tuning recipes while remaining interpretable: each answer choice is scored independently against the question.
-
----
+## Clinical Context
+MedMCQA covers 21 medical subjects (anatomy, pathology, pharmacology, surgery, etc.). This project explores biomedical reasoning in a structured classification setting useful for educational decision support and benchmark-oriented clinical NLP evaluation.
 
 ## Dataset Description
+**MedMCQA**: https://huggingface.co/datasets/openlifescienceai/medmcqa
 
-**MedMCQA** ([openlifescienceai/medmcqa](https://huggingface.co/datasets/openlifescienceai/medmcqa)) is a large-scale open-domain multi-choice QA dataset designed to address real-world medical entrance exam questions.
-
-- **Total questions**: ~187,000 (train) + ~6,100 (validation)
-- **Answer choices**: 4 options (A, B, C, D)
-- **Subjects**: 21 medical subjects
-- **We use**: 5,000 training + 1,000 validation samples (configurable)
-
-Each example contains:
-- `question` — the medical question text
-- `opa`, `opb`, `opc`, `opd` — four candidate answer strings
-- `cop` — correct option index (0-based: 0=A, 1=B, 2=C, 3=D)
-- `subject_name` — medical subject category
-
----
+- Task: 4-way medical multiple-choice classification
+- Labels: A, B, C, D
+- Fields used: `question`, `opa`, `opb`, `opc`, `opd`, `cop`, `subject_name`
+- Default subset: 5,000 training + 1,000 validation samples (configurable)
 
 ## Setup Instructions
+> Recommended Python version: **Python 3.10+** (tested with modern 3.10/3.11 environments).
 
-### 1. Clone the repository
-
+### 1) Clone repository
 ```bash
 git clone https://github.com/Pjahuey/Clinical-NLP-with-Biomedical-Text-Data.git
 cd Clinical-NLP-with-Biomedical-Text-Data
 ```
 
-### 2. Create a virtual environment (recommended)
-
+### 2) Create and activate virtual environment
 ```bash
 python -m venv venv
-source venv/bin/activate        # Linux/macOS
-venv\Scripts\activate           # Windows
+source venv/bin/activate                    # Linux/macOS
+venv\Scripts\activate.bat                 # Windows (Command Prompt)
+# or: .\venv\Scripts\Activate.ps1         # Windows PowerShell
 ```
 
-### 3. Install dependencies
-
+### 3) Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-> **GPU users**: ensure a CUDA-compatible version of PyTorch is installed.
-> Visit [pytorch.org](https://pytorch.org) for platform-specific instructions.
-
----
-
-## How to Run
-
-Run the full pipeline with default settings (DistilBERT, 3 epochs, 5000 train / 1000 val):
-
+## Quick Start
+Default single-model run:
 ```bash
 python -m src.main
 ```
 
-### Common options
-
+Or with helper scripts:
 ```bash
-# Use BERT instead of DistilBERT
-python -m src.main --model bert-base-uncased
-
-# Faster run for testing (2 epochs, smaller dataset)
-python -m src.main --epochs 2 --train_size 1000 --val_size 200
-
-# Custom output directory
-python -m src.main --output_dir my_outputs
-
-# Full option list
-python -m src.main --help
+./run_experiment.sh
+# Windows:
+run_experiment.bat
 ```
 
-### CLI arguments
+## Usage
+### Single model
+```bash
+python -m src.main --model distilbert-base-uncased
+python -m src.main --model bert-base-uncased
+```
 
-| Argument | Default | Description |
-|---|---|---|
-| `--model` | `distilbert-base-uncased` | HuggingFace model name or shorthand (`distilbert`/`bert`) |
-| `--epochs` | `3` | Number of training epochs |
-| `--batch_size` | `8` | Per-device batch size |
-| `--learning_rate` | `2e-5` | AdamW learning rate |
-| `--train_size` | `5000` | Training samples to use |
-| `--val_size` | `1000` | Validation samples to use |
-| `--max_length` | `128` | Max token length per (question, option) pair |
-| `--output_dir` | `outputs` | Directory for all saved outputs |
-| `--seed` | `42` | Random seed for reproducibility |
+### Compare both required models in one run
+```bash
+python -m src.main --compare_models
+```
 
----
+### Faster smoke run
+```bash
+python -m src.main --epochs 1 --train_size 500 --val_size 200
+```
+
+### CLI Arguments
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `--model` | `str` | `distilbert-base-uncased` | Single model name/alias or comma-separated model list |
+| `--compare_models` | `flag` | `False` | Runs `distilbert-base-uncased` and `bert-base-uncased` together |
+| `--epochs` | `int` | `3` | Number of training epochs |
+| `--batch_size` | `int` | `8` | Per-device train/eval batch size |
+| `--learning_rate` | `float` | `2e-5` | AdamW learning rate |
+| `--train_size` | `int` | `5000` | Training subset size |
+| `--val_size` | `int` | `1000` | Validation subset size |
+| `--max_length` | `int` | `128` | Max token length per (question, option) pair |
+| `--output_dir` | `str` | `outputs` | Root directory for artifacts |
+| `--figure_dir` | `str` | `figures` | Directory for generated figures |
+| `--seed` | `int` | `42` | Random seed |
 
 ## Outputs
+After each run, artifacts are automatically saved:
 
-After a successful run the following are saved to `outputs/` (or `--output_dir`):
-
-| File / Folder | Contents |
+| File / Folder | Description |
 |---|---|
-| `model/` | Trained model weights + tokenizer |
-| `logs/` | TensorBoard-compatible training logs |
-| `predictions.csv` | Per-example predictions vs. ground truth |
-| `metrics.json` | Overall accuracy |
-| `correct_examples.csv` | 5 correctly classified examples |
-| `incorrect_examples.csv` | 5 misclassified examples |
-| `subject_accuracy.csv` | Per-subject accuracy breakdown (if available) |
+| `outputs/config.json` | Full run configuration |
+| `outputs/metrics.json` | Accuracy, macro precision/recall/F1 |
+| `outputs/predictions.csv` | Per-example predictions |
+| `outputs/correct_examples.csv` | Sample correct predictions |
+| `outputs/incorrect_examples.csv` | Sample incorrect predictions |
+| `outputs/subject_accuracy.csv` | Subject-wise accuracy (if available) |
+| `outputs/model/` | Trained model + tokenizer |
+| `figures/subject_accuracy.png` | Subject-wise accuracy bar chart (if available) |
 
----
+When running two models:
 
-## Results Summary
+| File / Folder | Description |
+|---|---|
+| `outputs/model_comparison.csv` | Side-by-side model metrics summary |
+| `outputs/readme_placeholders.json` | Auto-generated values for README result placeholders |
+| `figures/model_comparison_accuracy.png` | Model comparison bar chart |
 
-> Results will be populated after running the full pipeline.
+## Results Summary (placeholders)
+These placeholders are auto-populated in `outputs/readme_placeholders.json` after comparison runs.
 
 | Model | Train Size | Val Size | Epochs | Val Accuracy |
-|---|---|---|---|---|
-| distilbert-base-uncased | 5000 | 1000 | 3 | TBD |
-| bert-base-uncased | 5000 | 1000 | 3 | TBD |
+|---|---:|---:|---:|---:|
+| distilbert-base-uncased | 5000 | 1000 | 3 | `{{DISTILBERT_VAL_ACCURACY}}` |
+| bert-base-uncased | 5000 | 1000 | 3 | `{{BERT_VAL_ACCURACY}}` |
 
-Random baseline: **25.0%** (4-class uniform random).
+Best model placeholder: `{{BEST_MODEL}}`
 
----
+Random baseline (4-class uniform): **25.0%**
 
 ## Reproducibility Notes
+- Deterministic seeds are set for Python, NumPy, and PyTorch.
+- Subset selection uses deterministic indexing (`select(range(N))`).
+- Run settings are saved to `config.json` for each execution.
+- Output and figure directories are created automatically.
+- Input validation catches unsupported model names and invalid subset sizes with clear errors.
 
-- Random seed is set globally for Python, NumPy, and PyTorch via `src/utils.set_seed()`.
-- All dataset subsets use deterministic slicing (`dataset.select(range(N))`).
-- Model weights are initialised from a fixed pretrained checkpoint.
-- Training uses the Hugging Face `Trainer` API with `seed` passed to `TrainingArguments`.
-- To reproduce exactly, use the same environment pinned in `requirements.txt`.
+## Limitations
+- Current training defaults use subsets for practical runtime.
+- This repository version emphasizes transformer models and does not include a full RNN/LSTM baseline implementation.
+- Performance is benchmark-oriented and does not imply clinical deployment readiness.
+- Additional external validation is needed before any real-world clinical use.
 
----
-
-## Report Structure
-
-1. **Abstract**
-2. **Introduction** — Carolina Horey
-3. **Literature Review** — Carolina Horey
-4. **Methods & Data** — James Garner
-5. **Training & Experiments** — Pascual Jahuey
-6. **Results & Evaluation** — Riley Bendure
-7. **Discussion** — Full team
-8. **References**
-
----
+## References
+1. Devlin, J., et al. BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding (2019).
+2. Sanh, V., et al. DistilBERT, a distilled version of BERT (2019).
+3. Pal, A., et al. MedMCQA: A Large-scale Multi-Subject Multi-Choice Dataset for Medical QA (2022).
+4. Wolf, T., et al. Transformers: State-of-the-Art Natural Language Processing (2020).
+5. Hugging Face Datasets: MedMCQA card — https://huggingface.co/datasets/openlifescienceai/medmcqa
 
 ## License
-
-This project is for educational purposes. The MedMCQA dataset is distributed under its own license; see [Hugging Face dataset page](https://huggingface.co/datasets/openlifescienceai/medmcqa) for details.
-
+This project is for educational purposes. MedMCQA is distributed under its own license; see the dataset card for details.

@@ -9,61 +9,47 @@ Handles:
   - Support for switching between DistilBERT and BERT
 """
 
-from transformers import (
-    AutoTokenizer,
-    AutoModelForMultipleChoice,
-)
+from typing import Dict
+
+from transformers import AutoModelForMultipleChoice, AutoTokenizer
 
 # Supported model identifiers
-SUPPORTED_MODELS = {
+SUPPORTED_MODELS: Dict[str, str] = {
     "distilbert": "distilbert-base-uncased",
     "bert": "bert-base-uncased",
+    "distilbert-base-uncased": "distilbert-base-uncased",
+    "bert-base-uncased": "bert-base-uncased",
 }
 
 DEFAULT_MODEL = "distilbert-base-uncased"
 
 
+def resolve_model_name(model_name: str) -> str:
+    """Resolve shorthand names and validate supported model identifiers."""
+    normalized = model_name.strip().lower()
+    if normalized not in SUPPORTED_MODELS:
+        supported = ", ".join(sorted(set(SUPPORTED_MODELS.values())))
+        aliases = "distilbert, bert"
+        raise ValueError(
+            "Invalid model name: "
+            f"'{model_name}'. Supported models are: {supported}. "
+            f"You may also use aliases: {aliases}."
+        )
+    return SUPPORTED_MODELS[normalized]
+
+
 def get_tokenizer(model_name: str = DEFAULT_MODEL):
-    """
-    Load and return a Hugging Face tokenizer.
-
-    Parameters
-    ----------
-    model_name : str
-        HuggingFace model identifier or shorthand key from SUPPORTED_MODELS.
-
-    Returns
-    -------
-    tokenizer : AutoTokenizer
-    """
-    # Allow shorthand keys like "distilbert" or "bert"
-    model_name = SUPPORTED_MODELS.get(model_name, model_name)
-    print(f"Loading tokenizer: {model_name}")
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    return tokenizer
+    """Load and return a Hugging Face tokenizer."""
+    resolved_model = resolve_model_name(model_name)
+    print(f"Loading tokenizer: {resolved_model}")
+    return AutoTokenizer.from_pretrained(resolved_model)
 
 
 def get_model(model_name: str = DEFAULT_MODEL, num_labels: int = 4):
     """
     Load a pretrained transformer model adapted for multiple-choice
     classification (4-way: A/B/C/D).
-
-    The AutoModelForMultipleChoice head takes four candidate encodings and
-    outputs a single logit per candidate, yielding a 4-class distribution
-    after softmax.
-
-    Parameters
-    ----------
-    model_name : str
-        HuggingFace model identifier or shorthand key from SUPPORTED_MODELS.
-    num_labels : int
-        Number of answer choices (fixed at 4 for MedMCQA).
-
-    Returns
-    -------
-    model : AutoModelForMultipleChoice
     """
-    model_name = SUPPORTED_MODELS.get(model_name, model_name)
-    print(f"Loading model: {model_name}  (num_choices={num_labels})")
-    model = AutoModelForMultipleChoice.from_pretrained(model_name)
-    return model
+    resolved_model = resolve_model_name(model_name)
+    print(f"Loading model: {resolved_model}  (num_choices={num_labels})")
+    return AutoModelForMultipleChoice.from_pretrained(resolved_model)

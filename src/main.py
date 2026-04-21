@@ -9,91 +9,168 @@ End-to-end pipeline:
   3. Build train/val datasets
   4. Train the model
   5. Evaluate and save results
-
-Usage:
-    python -m src.main [--model distilbert] [--epochs 3] [--batch_size 8]
-                       [--train_size 5000] [--val_size 1000]
-                       [--output_dir outputs]
 """
 
 import argparse
+import json
 import os
+from typing import Any, Dict, List
 
-from src.utils import set_seed, get_device
-from src.model import get_tokenizer, get_model
+import matplotlib.pyplot as plt
+import pandas as pd
+
 from src.data import build_datasets
-from src.train import run_training
 from src.evaluate import run_evaluation
+from src.model import DEFAULT_MODEL, get_model, get_tokenizer, resolve_model_name
+from src.train import run_training
+from src.utils import ensure_dir, get_device, set_seed
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for training and evaluation."""
     parser = argparse.ArgumentParser(
-        description="Biomedical NLP – Multiple-Choice Question Answering Pipeline"
+        description="Biomedical NLP – Multiple-Choice Text Classification on MedMCQA"
     )
     parser.add_argument(
         "--model",
         type=str,
-        default="distilbert-base-uncased",
-        help="HuggingFace model name or shorthand key (distilbert / bert)",
+        default=DEFAULT_MODEL,
+        help=(
+            "Single model name/alias (distilbert, bert, distilbert-base-uncased, "
+            "bert-base-uncased) or comma-separated pair for comparison"
+        ),
     )
     parser.add_argument(
-        "--epochs", type=int, default=3,
-        help="Number of training epochs (default 3)"
+        "--compare_models",
+        action="store_true",
+        help="Run both distilbert-base-uncased and bert-base-uncased for direct comparison",
+    )
+    parser.add_argument("--epochs", type=int, default=3, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=8, help="Per-device batch size")
+    parser.add_argument("--learning_rate", type=float, default=2e-5, help="AdamW learning rate")
+    parser.add_argument("--train_size", type=int, default=5000, help="Training subset size")
+    parser.add_argument("--val_size", type=int, default=1000, help="Validation subset size")
+    parser.add_argument("--max_length", type=int, default=128, help="Maximum token length")
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="outputs",
+        help="Directory to save model outputs and artifacts",
     )
     parser.add_argument(
-        "--batch_size", type=int, default=8,
-        help="Per-device batch size (default 8)"
+        "--figure_dir",
+        type=str,
+        default="figures",
+        help="Directory to save generated figures",
     )
-    parser.add_argument(
-        "--learning_rate", type=float, default=2e-5,
-        help="AdamW learning rate (default 2e-5)"
-    )
-    parser.add_argument(
-        "--train_size", type=int, default=5000,
-        help="Number of training samples to use (default 5000)"
-    )
-    parser.add_argument(
-        "--val_size", type=int, default=1000,
-        help="Number of validation samples to use (default 1000)"
-    )
-    parser.add_argument(
-        "--max_length", type=int, default=128,
-        help="Max token length per (question, option) pair (default 128)"
-    )
-    parser.add_argument(
-        "--output_dir", type=str, default="outputs",
-        help="Directory to save model, logs, and results (default outputs/)"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=42,
-        help="Random seed for reproducibility (default 42)"
-    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
+def parse_model_list(model_arg: str, compare_models: bool) -> List[str]:
+    """Resolve and validate the final list of models to run."""
+    if compare_models:
+        return ["distilbert-base-uncased", "bert-base-uncased"]
 
-    print("\n" + "=" * 60)
-    print("  Biomedical NLP – MedMCQA Classification Pipeline")
-    print("=" * 60)
-    print(f"  Model       : {args.model}")
-    print(f"  Epochs      : {args.epochs}")
-    print(f"  Batch size  : {args.batch_size}")
-    print(f"  Train size  : {args.train_size}")
-    print(f"  Val size    : {args.val_size}")
-    print(f"  Output dir  : {args.output_dir}")
-    print("=" * 60 + "\n")
+    requested = [part.strip() for part in model_arg.split(",") if part.strip()]
+    if not requested:
+        raise ValueError("No model specified. Provide --model with a valid identifier.")
 
-    # 1. Reproducibility
-    set_seed(args.seed)
-    device = get_device()
+    resolved = [resolve_model_name(name) for name in requested]
 
-    # 2. Tokenizer and model
-    tokenizer = get_tokenizer(args.model)
-    model = get_model(args.model)
+    # Remove duplicates while preserving order
+    unique_resolved: List[str] = []
+    for model_name in resolved:
+        if model_name not in unique_resolved:
+            unique_resolved.append(model_name)
 
-    # 3. Datasets
+    return unique_resolved
+
+
+def save_config(config: Dict[str, Any], output_dir: str) -> str:
+    """Save experiment config to outputs/config.json."""
+    ensure_dir(output_dir)
+    config_path = os.path.join(output_dir, "config.json")
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+    return config_path
+
+
+def save_model_comparison(results: List[Dict[str, Any]], output_dir: str, figure_dir: str) -> None:
+    """Save model comparison CSV, README placeholders, and bar chart."""
+    if len(results) < 2:
+        return
+
+    ensure_dir(output_dir)
+    ensure_dir(figure_dir)
+
+    comparison_df = pd.DataFrame(results)
+    comparison_csv = os.path.join(output_dir, "model_comparison.csv")
+    comparison_df.to_csv(comparison_csv, index=False)
+    print(f"Model comparison saved to: {comparison_csv}")
+
+    # Placeholder map for README replacement workflows
+    placeholder_payload = {
+        "{{DISTILBERT_VAL_ACCURACY}}": None,
+        "{{BERT_VAL_ACCURACY}}": None,
+        "{{BEST_MODEL}}": None,
+    }
+    for row in results:
+        if row["model"] == "distilbert-base-uncased":
+            placeholder_payload["{{DISTILBERT_VAL_ACCURACY}}"] = round(row["accuracy"], 4)
+        if row["model"] == "bert-base-uncased":
+            placeholder_payload["{{BERT_VAL_ACCURACY}}"] = round(row["accuracy"], 4)
+
+    best_model = max(results, key=lambda r: r["accuracy"])["model"]
+    placeholder_payload["{{BEST_MODEL}}"] = best_model
+
+    placeholders_path = os.path.join(output_dir, "readme_placeholders.json")
+    with open(placeholders_path, "w", encoding="utf-8") as f:
+        json.dump(placeholder_payload, f, indent=2)
+    print(f"README placeholders saved to: {placeholders_path}")
+
+    plt.figure(figsize=(8, 5))
+    plt.bar(comparison_df["model"], comparison_df["accuracy"])
+    plt.ylim(0, 1)
+    plt.xlabel("Model")
+    plt.ylabel("Validation Accuracy")
+    plt.title("Model Comparison: Validation Accuracy")
+    plt.tight_layout()
+
+    plot_path = os.path.join(figure_dir, "model_comparison_accuracy.png")
+    plt.savefig(plot_path, dpi=200)
+    plt.close()
+    print(f"Model comparison figure saved to: {plot_path}")
+
+
+def run_single_model(
+    model_name: str, args: argparse.Namespace, device: Any, multi_run: bool
+) -> Dict[str, Any]:
+    """Run train+evaluate for one model and return summary metrics."""
+    model_output_dir = args.output_dir if not multi_run else os.path.join(args.output_dir, model_name)
+    model_figure_dir = args.figure_dir if not multi_run else os.path.join(args.figure_dir, model_name)
+
+    ensure_dir(model_output_dir)
+    ensure_dir(model_figure_dir)
+
+    model_config = {
+        "model": model_name,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "learning_rate": args.learning_rate,
+        "train_size": args.train_size,
+        "val_size": args.val_size,
+        "max_length": args.max_length,
+        "seed": args.seed,
+        "output_dir": model_output_dir,
+        "figure_dir": model_figure_dir,
+    }
+    config_path = save_config(model_config, model_output_dir)
+    print(f"Run configuration saved to: {config_path}")
+
+    tokenizer = get_tokenizer(model_name)
+    model = get_model(model_name)
+
     train_dataset, val_dataset = build_datasets(
         tokenizer=tokenizer,
         train_size=args.train_size,
@@ -101,31 +178,96 @@ def main():
         max_length=args.max_length,
     )
 
-    # 4. Training
     trainer = run_training(
         model=model,
         tokenizer=tokenizer,
         train_dataset=train_dataset,
         val_dataset=val_dataset,
-        output_dir=args.output_dir,
+        output_dir=model_output_dir,
         num_epochs=args.epochs,
         batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         seed=args.seed,
     )
 
-    # 5. Evaluation
     metrics = run_evaluation(
         model=trainer.model,
         val_dataset=val_dataset,
-        output_dir=args.output_dir,
+        output_dir=model_output_dir,
+        batch_size=max(16, args.batch_size),
+        figure_dir=model_figure_dir,
         device=device,
     )
 
-    print("\n" + "=" * 60)
-    print(f"  Final Validation Accuracy: {metrics['accuracy'] * 100:.2f}%")
-    print("=" * 60)
-    print(f"\nAll outputs saved to: {os.path.abspath(args.output_dir)}")
+    return {
+        "model": model_name,
+        "accuracy": metrics["accuracy"],
+        "precision_macro": metrics["precision_macro"],
+        "recall_macro": metrics["recall_macro"],
+        "f1_macro": metrics["f1_macro"],
+        "output_dir": model_output_dir,
+    }
+
+
+def main() -> None:
+    """Main entry point for MedMCQA text classification experiments."""
+    args = parse_args()
+
+    try:
+        models_to_run = parse_model_list(args.model, args.compare_models)
+    except ValueError as exc:
+        raise SystemExit(f"Argument error: {exc}") from exc
+
+    print("\n" + "=" * 70)
+    print("  Biomedical NLP – MedMCQA Text Classification Pipeline")
+    print("=" * 70)
+    print(f"  Models      : {', '.join(models_to_run)}")
+    print(f"  Epochs      : {args.epochs}")
+    print(f"  Batch size  : {args.batch_size}")
+    print(f"  Train size  : {args.train_size}")
+    print(f"  Val size    : {args.val_size}")
+    print(f"  Output dir  : {args.output_dir}")
+    print(f"  Figure dir  : {args.figure_dir}")
+    print("=" * 70 + "\n")
+
+    set_seed(args.seed)
+    device = get_device()
+
+    ensure_dir(args.output_dir)
+    ensure_dir(args.figure_dir)
+
+    overall_config = {
+        "models": models_to_run,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "learning_rate": args.learning_rate,
+        "train_size": args.train_size,
+        "val_size": args.val_size,
+        "max_length": args.max_length,
+        "seed": args.seed,
+        "output_dir": args.output_dir,
+        "figure_dir": args.figure_dir,
+    }
+    root_config_path = save_config(overall_config, args.output_dir)
+    print(f"Global configuration saved to: {root_config_path}")
+
+    all_results: List[Dict[str, Any]] = []
+    for model_name in models_to_run:
+        print(f"\n>>> Running experiment for model: {model_name}")
+        try:
+            result = run_single_model(model_name, args, device, multi_run=len(models_to_run) > 1)
+        except ValueError as exc:
+            raise SystemExit(f"Configuration error: {exc}") from exc
+        all_results.append(result)
+
+    save_model_comparison(all_results, args.output_dir, args.figure_dir)
+
+    print("\n" + "=" * 70)
+    for row in all_results:
+        print(f"  {row['model']}: accuracy={row['accuracy'] * 100:.2f}%")
+    print("=" * 70)
+    print(f"\nAll outputs saved under: {os.path.abspath(args.output_dir)}")
+    print(f"All figures saved under: {os.path.abspath(args.figure_dir)}")
 
 
 if __name__ == "__main__":
