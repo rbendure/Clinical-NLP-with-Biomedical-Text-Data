@@ -148,9 +148,12 @@ def save_model_comparison(results: List[Dict[str, Any]], output_dir: str, figure
     )
 
     plt.figure(figsize=(9, 5))
-    colors = ["#1f77b4", "#ff7f0e", "#7f7f7f"]
-    plt.bar(plot_df["model"], plot_df["accuracy"], color=colors[: len(plot_df)])
-    plt.ylim(0, 1)
+    colors = ["#1f77b4", "#ff7f0e", "#7f7f7f", "#2ca02c"]
+    bars = plt.bar(plot_df["model"], plot_df["accuracy"], color=colors[: len(plot_df)])
+    for bar, acc in zip(bars, plot_df["accuracy"]):
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
+                 f"{acc:.2%}", ha="center", va="bottom", fontweight="bold")
+    plt.ylim(0, 1.1)
     plt.xlabel("Model Name")
     plt.ylabel("Accuracy")
     plt.title("Model Comparison: Validation Accuracy")

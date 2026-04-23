@@ -18,12 +18,14 @@ from src.utils import ensure_dir
 
 
 def plot_label_distribution(train_data: Dataset, figure_dir: str) -> None:
-    """Plot and save the distribution of correct answers (A/B/C/D)."""
     label_map = {0: "A", 1: "B", 2: "C", 3: "D"}
     labels = [label_map[int(ex["cop"])] for ex in train_data]
     counts = pd.Series(labels).value_counts().sort_index()
     plt.figure(figsize=(7, 5))
-    plt.bar(counts.index, counts.values, color="#1f77b4")
+    bars = plt.bar(counts.index, counts.values, color="#1f77b4")
+    for bar, count in zip(bars, counts.values):
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 5,
+                 str(count), ha="center", va="bottom", fontweight="bold")
     plt.xlabel("Answer Choice")
     plt.ylabel("Count")
     plt.title("Label Distribution (Training Set)")
@@ -33,26 +35,14 @@ def plot_label_distribution(train_data: Dataset, figure_dir: str) -> None:
     print("  Saved: label_distribution.png")
 
 
-def plot_question_length(train_data: Dataset, figure_dir: str) -> None:
-    """Plot and save histogram of question lengths in words."""
-    lengths = [len(ex["question"].split()) for ex in train_data]
-    plt.figure(figsize=(8, 5))
-    plt.hist(lengths, bins=40, color="#ff7f0e", edgecolor="white")
-    plt.xlabel("Question Length (words)")
-    plt.ylabel("Count")
-    plt.title("Question Length Distribution (Training Set)")
-    plt.tight_layout()
-    plt.savefig(os.path.join(figure_dir, "question_length.png"), dpi=200)
-    plt.close()
-    print("  Saved: question_length.png")
-
-
 def plot_subject_distribution(train_data: Dataset, figure_dir: str) -> None:
-    """Plot and save the top 15 subjects by frequency."""
     subjects = [ex.get("subject_name", "unknown") for ex in train_data]
     counts = pd.Series(subjects).value_counts().head(15)
     plt.figure(figsize=(12, 6))
-    plt.bar(counts.index, counts.values, color="#2ca02c")
+    bars = plt.bar(counts.index, counts.values, color="#2ca02c")
+    for bar, count in zip(bars, counts.values):
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 2,
+                 str(count), ha="center", va="bottom", fontsize=8, fontweight="bold")
     plt.xticks(rotation=45, ha="right")
     plt.xlabel("Subject")
     plt.ylabel("Count")
@@ -64,14 +54,16 @@ def plot_subject_distribution(train_data: Dataset, figure_dir: str) -> None:
 
 
 def plot_option_length(train_data: Dataset, figure_dir: str) -> None:
-    """Plot and save average option length per answer choice."""
     option_keys = {"A": "opa", "B": "opb", "C": "opc", "D": "opd"}
     avg_lengths = {
         label: np.mean([len(ex[key].split()) for ex in train_data])
         for label, key in option_keys.items()
     }
     plt.figure(figsize=(7, 5))
-    plt.bar(avg_lengths.keys(), avg_lengths.values(), color="#9467bd")
+    bars = plt.bar(avg_lengths.keys(), avg_lengths.values(), color="#9467bd")
+    for bar, val in zip(bars, avg_lengths.values()):
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
+                 f"{val:.1f}", ha="center", va="bottom", fontweight="bold")
     plt.xlabel("Answer Choice")
     plt.ylabel("Average Length (words)")
     plt.title("Average Option Length by Answer Choice (Training Set)")
@@ -79,7 +71,6 @@ def plot_option_length(train_data: Dataset, figure_dir: str) -> None:
     plt.savefig(os.path.join(figure_dir, "option_length.png"), dpi=200)
     plt.close()
     print("  Saved: option_length.png")
-
 
 def print_summary_stats(train_data: Dataset, val_data: Dataset) -> None:
     """Print basic dataset statistics to the console."""
