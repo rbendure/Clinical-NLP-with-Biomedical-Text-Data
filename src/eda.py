@@ -52,6 +52,25 @@ def plot_subject_distribution(train_data: Dataset, figure_dir: str) -> None:
     plt.close()
     print("  Saved: subject_distribution.png")
 
+def plot_question_length(train_data: Dataset, figure_dir: str) -> None:
+    """Plot and save histogram of question lengths in words."""
+    lengths = [len(ex["question"].split()) for ex in train_data]
+    plt.figure(figsize=(8, 5))
+    plt.hist(lengths, bins=40, color="#ff7f0e", edgecolor="white")
+    plt.xlabel("Question Length (words)")
+    plt.ylabel("Count")
+    plt.title("Question Length Distribution (Training Set)")
+    # Annotate mean and max
+    plt.axvline(np.mean(lengths), color="red", linestyle="--", linewidth=1.5,
+                label=f"Mean: {np.mean(lengths):.1f}")
+    plt.axvline(np.max(lengths), color="black", linestyle="--", linewidth=1.5,
+                label=f"Max: {np.max(lengths)}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(figure_dir, "question_length.png"), dpi=200)
+    plt.close()
+    print("  Saved: question_length.png")
+
 
 def plot_option_length(train_data: Dataset, figure_dir: str) -> None:
     option_keys = {"A": "opa", "B": "opb", "C": "opc", "D": "opd"}
