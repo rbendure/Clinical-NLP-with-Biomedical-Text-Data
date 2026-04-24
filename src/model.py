@@ -61,4 +61,7 @@ def get_model(model_name: str = DEFAULT_MODEL, num_labels: int = 4):
         print("Loading LSTM model (BiLSTM, 2 layers, hidden=256)")
         return LSTMMultipleChoice(num_choices=num_labels)
     print(f"Loading model: {resolved_model}  (num_choices={num_labels})")
-    return AutoModelForMultipleChoice.from_pretrained(resolved_model)
+    return AutoModelForMultipleChoice.from_pretrained(
+        resolved_model, 
+        attn_implementation="eager"
+    )

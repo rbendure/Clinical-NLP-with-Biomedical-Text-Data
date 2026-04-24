@@ -27,6 +27,7 @@ from src.evaluate import run_evaluation
 from src.model import DEFAULT_MODEL, get_model, get_tokenizer, resolve_model_name
 from src.train import run_training
 from src.utils import ensure_dir, get_device, set_seed
+from src.tokenization_report import run_tokenization_report
 
 
 def parse_args() -> argparse.Namespace:
@@ -206,6 +207,11 @@ def run_single_model(
         val_data=val_dataset.data,
         figure_dir=model_figure_dir,
     )
+    run_tokenization_report(    # ← add this
+        train_data=train_dataset.data,
+        output_dir=model_output_dir,
+        figure_dir=os.path.join(model_figure_dir, "tokenization"),
+    )
     trainer = run_training(
         model=model,
         tokenizer=tokenizer,
@@ -225,6 +231,7 @@ def run_single_model(
         batch_size=args.eval_batch_size,
         figure_dir=model_figure_dir,
         device=device,
+        tokenizer=tokenizer,
     )
 
     return {
